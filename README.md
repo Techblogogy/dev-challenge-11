@@ -1,7 +1,9 @@
-To Start this app you must have NPM.
-Use following NPM commands:
+# Dev Challenge
 
-npm init
-npm start
+To Start this app you must have NPM. Use following commands:
 
-Local server with address http://localhost:3000/ should start
+1. ```npm install```
+
+```npm start```
+
+http://localhost:3000/ should start
