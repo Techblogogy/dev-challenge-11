@@ -2,12 +2,12 @@
 
 class Board {
 
-    constructor(w, h) {
+    constructor(canvas, w, h) {
 
-        self._w = w;
-        self._h = h;
+        this._w = w;
+        this._h = h;
 
-        self.zero_state = [
+        this.zero_state = [
             [0, 1],
             [1, 2],
             [2, 0],
@@ -15,36 +15,38 @@ class Board {
             [2, 2]
         ];
 
-        self.run = false;
+        this.runState = false;
 
-        self.zero = [];
+        this.zero = [];
 
-        self.speed = 300;
+        this.speed =  10; //300;
 
-        self.pixel = 5;
+        this.pixel = 5;
 
-        self.sBuffer = [];
-        self.tBuffer = [];
+        this.sBuffer = [];
+        this.tBuffer = [];
 
-        self.start = null;
+        this.grid = this.renderGrid();
 
-        self.cnv = document.getElementById("game");
-            self.cnv.width = self._w * self.pixel;
-            self.cnv.height = self._h * self.pixel;
-        self.ctx = self.cnv.getContext('2d');
+        this.start = null;
 
-        self.cnv.onclick = this.click;
+        this.cnv = canvas; //document.getElementById("game");
+            this.cnv.width = this._w * this.pixel;
+            this.cnv.height = this._h * this.pixel;
+        this.ctx = this.cnv.getContext('2d');
+
+        this.cnv.onclick = this.click.bind(this);
     }
 
     init() {
 
-        for (var y = 0; y < self._h; y++) {
+        for (var y = 0; y < this._h; y++) {
             var row = [];
-            for (var x = 0; x < self._w; x++) {
+            for (var x = 0; x < this._w; x++) {
 
                 var f = false;
-                for (var i = 0; i < self.zero_state.length; i++) {
-                    if (self.zero_state[i][0] == x && self.zero_state[i][1] == y) {
+                for (var i = 0; i < this.zero_state.length; i++) {
+                    if (this.zero_state[i][0] == x && this.zero_state[i][1] == y) {
                         row.push(1);
                         f = true;
 
@@ -58,75 +60,79 @@ class Board {
 
             }
 
-            self.zero.push(row);
+            this.zero.push(row);
         }
 
-        for (var i = 0; i < self.zero.length; i++) {
-            self.sBuffer = self.sBuffer.concat(self.zero[i]);
+        for (var i = 0; i < this.zero.length; i++) {
+            this.sBuffer = this.sBuffer.concat(this.zero[i]);
         }
     }
 
     randomize() {
-        for (var i=0; i< self.sBuffer.length; i++) {
-            self.sBuffer[i] = Math.floor(Math.random() * (1 - 0 + 1)) + 0;
+        for (var i=0; i< this.sBuffer.length; i++) {
+            this.sBuffer[i] = Math.floor(Math.random() * (1 - 0 + 1)) + 0;
         }
     }
 
     getBuff() {
-        return self.sBuffer;
+        return this.sBuffer;
     }
 
     play () {
-        self.run = true;
+        this.runState = true;
+    }
+
+    toggle() {
+        this.runState = !this.runState;
     }
 
     setSpeed(speed) {
-        self.speed = speed;
+        this.speed = speed;
     }
 
     pause() {
-        self.run = false;
+        this.runState = false;
     }
 
     stop () {
         this.pause();
 
-        for (var i=0; i< self.sBuffer.length; i++) {
-            self.sBuffer[i] = 0;
+        for (var i=0; i< this.sBuffer.length; i++) {
+            this.sBuffer[i] = 0;
         }
     }
 
     tick() {
 
         // Copy temp buffer with screen buffer`
-        self.tBuffer = self.sBuffer.slice();
+        this.tBuffer = this.sBuffer.slice();
 
         //Calculate
-        for (var y = 0; y < self._h; y++) {
-            for (var x = 0; x < self._w; x++) {
+        for (var y = 0; y < this._h; y++) {
+            for (var x = 0; x < this._w; x++) {
                 var n = 0; //Neighbours
-                var i = y * self._w + x; //Id Of Cell
+                var i = y * this._w + x; //Id Of Cell
 
                 //Calculate Neigbours
                 for (var y0 = y - 1; y0 <= y + 1; y0++) {
                     for (var x0 = x - 1; x0 <= x + 1; x0++) {
-                        if ( (y != y0 || x != x0) && (x0 >= 0 && x0 < self._w && y0 >= 0 && y0 < self._h) ) {
-                            if (self.tBuffer[y0 * self._w + x0]) n++;
+                        if ( (y != y0 || x != x0) && (x0 >= 0 && x0 < this._w && y0 >= 0 && y0 < this._h) ) {
+                            if (this.tBuffer[y0 * this._w + x0]) n++;
                         }
                     }
                 }
 
                 //Apply Rules
-                if (self.tBuffer[i]) {
+                if (this.tBuffer[i]) {
                     if (n < 2)
-                        self.sBuffer[i] = 0;
+                        this.sBuffer[i] = 0;
                     else if (n === 2 || n === 3)
-                        self.sBuffer[i] = 1;
+                        this.sBuffer[i] = 1;
                     else if (n > 3)
-                        self.sBuffer[i] = 0;
+                        this.sBuffer[i] = 0;
                 } else {
                     if (n === 3)
-                        self.sBuffer[i] = 1;
+                        this.sBuffer[i] = 1;
                 }
             }
         }
@@ -136,34 +142,41 @@ class Board {
 
     renderGrid () {
 
-        self.ctx.strokeStyle = "#EEEEEE";
-        for (var y = 0; y < self._h; y++) {
+        var virtual = document.createElement("canvas");
+            virtual.width = this._w * this.pixel;
+            virtual.height = this._h * this.pixel;
+        var ctx = virtual.getContext('2d');
 
-            for (var x = 0; x < self._w; x++) {
+        ctx.strokeStyle = "#EEEEEE";
+        for (var y = 0; y < this._h; y++) {
 
-                self.ctx.beginPath();
-                self.ctx.moveTo(x*self.pixel, y*self.pixel);
-                self.ctx.lineTo(x*self.pixel, self._h*self.pixel);
-                self.ctx.stroke();
+            for (var x = 0; x < this._w; x++) {
+
+                ctx.beginPath();
+                ctx.moveTo(x*this.pixel, y*this.pixel);
+                ctx.lineTo(x*this.pixel, this._h*this.pixel);
+                ctx.stroke();
             }
 
 
-            self.ctx.beginPath();
-            self.ctx.moveTo(0, y*self.pixel);
-            self.ctx.lineTo(self._w*self.pixel, y*self.pixel);
-            self.ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, y*this.pixel);
+            ctx.lineTo(this._w*this.pixel, y*this.pixel);
+            ctx.stroke();
         }
+
+        return virtual;
     }
 
     render () {
-        self.ctx.fillStyle = "green";
-        for (var y = 0; y < self._h; y++) {
-            for (var x = 0; x < self._w; x++) {
+        this.ctx.fillStyle = "green";
+        for (var y = 0; y < this._h; y++) {
+            for (var x = 0; x < this._w; x++) {
                 var n = 0; //Neighbours
-                var i = y * self._w + x; //Id Of Cell
+                var i = y * this._w + x; //Id Of Cell
 
-                if (self.sBuffer[i] == 1) {
-                    self.ctx.fillRect(x*self.pixel,y*self.pixel, self.pixel, self.pixel);
+                if (this.sBuffer[i] == 1) {
+                    this.ctx.fillRect(x*this.pixel,y*this.pixel, this.pixel, this.pixel);
                 }
 
             }
@@ -171,11 +184,12 @@ class Board {
     }
 
     calcTime (timestamp) {
-        if (!self.start) self.start = timestamp;
-        var prog = timestamp - self.start;
+        if (!this.start) this.start = timestamp;
+        var prog = timestamp - this.start;
 
-        if (prog >= self.speed) {
-            self.start = null;
+
+        if (prog >= this.speed) {
+            this.start = null;
             return true;
         }
 
@@ -184,12 +198,15 @@ class Board {
 
     simulate (timestamp) {
 
+        // console.log("TICK");
+
         if (this.calcTime(timestamp)) {
-            self.ctx.clearRect(0,0,self.cnv.width,self.cnv.height);
-            if (self.run) {
+            this.ctx.clearRect(0,0,this.cnv.width,this.cnv.height);
+            if (this.runState) {
                 this.tick();
             } else {
-                this.renderGrid();
+                // this.renderGrid();
+                this.ctx.drawImage(this.grid, 0, 0);
             }
             this.render();
 
@@ -204,21 +221,19 @@ class Board {
     }
 
     click (e) {
-        var rect = self.cnv.getBoundingClientRect();
+        var rect = this.cnv.getBoundingClientRect();
 
         var coord =  {
-            x: parseInt((e.clientX - rect.left)/self.pixel),
-            y: parseInt((e.clientY - rect.top)/self.pixel)
+            x: parseInt((e.clientX - rect.left)/this.pixel),
+            y: parseInt((e.clientY - rect.top)/this.pixel)
         }
 
-        // console.log(coord);
+        var i = coord.y * this._w + coord.x;
 
-        var i = coord.y * self._w + coord.x;
-
-        if ( self.sBuffer[i] == 1 ) {
-            self.sBuffer[i] = 0;
+        if ( this.sBuffer[i] == 1 ) {
+            this.sBuffer[i] = 0;
         } else {
-            self.sBuffer[i] = 1;
+            this.sBuffer[i] = 1;
         }
 
 
@@ -227,50 +242,45 @@ class Board {
 
 
 
-window.onload = function() {
-
-    // setInterval(sim, 300);
-
-    // console.log(Board);
-    var b = new Board(200, 200);
-    console.log(b);
-    b.init();
-
-    var play = document.getElementById("play");
-    var stop = document.getElementById("stop");
-    var pause = document.getElementById("pause");
-
-    var random = document.getElementById("random");
-
-    var range = document.getElementById("speed");
-
-    play.onclick = function () {
-        console.log("PLAY");
-        b.play();
-    };
-    pause.onclick = function () {
-        console.log("Stop");
-        b.pause();
-    };
-    stop.onclick = function () {
-        b.stop();
-    };
-
-    random.onclick = function () {
-        b.randomize();
-    }
-
-    range.onchange = function () {
-        b.setSpeed(this.value);
-    }
-
-    b.run();
-    // window.requestAnimationFrame(b.simulate);
-
-    // function sim() {
-    //     b.simulate();
-    // }
-}
+// window.onload = function() {
+//
+//     // setInterval(sim, 300);
+//
+//     // console.log(Board);
+//     var b = new Board(200, 200);
+//     console.log(b);
+//     b.init();
+//
+//     var play = document.getElementById("play");
+//     var stop = document.getElementById("stop");
+//     var pause = document.getElementById("pause");
+//
+//     var random = document.getElementById("random");
+//
+//     var range = document.getElementById("speed");
+//
+//     play.onclick = function () {
+//         console.log("PLAY");
+//         b.play();
+//     };
+//     pause.onclick = function () {
+//         console.log("Stop");
+//         b.pause();
+//     };
+//     stop.onclick = function () {
+//         b.stop();
+//     };
+//
+//     random.onclick = function () {
+//         b.randomize();
+//     }
+//
+//     range.onchange = function () {
+//         b.setSpeed(this.value);
+//     }
+//
+//     b.run();
+// }
 
 
-module.exports = Board;
+export default Board;

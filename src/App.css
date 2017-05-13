@@ -29,6 +29,8 @@
 }
 
 .control {
-    width: 10%;
+    width: 20%;
     float: left;
+
+    text-align: center;
 }
